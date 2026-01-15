@@ -1,0 +1,28 @@
+# IDE & System Files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Config & Secrets
+.env
+config.php       # Jika config.php berisi password production, ignore ini.
+                # Tapi jika ini struktur dasar, jalankan: git update-index --skip-worktree config/database.php nanti.
+                # Untuk keamanan maksimal, biasanya kita copy config.example.php
+config/database.php
+
+# Dependencies
+/vendor/
+/node_modules/
+
+# Logs & Temp
+*.log
+/tmp/
+/storage/logs/
+error_log
+
+# Build
+/dist/
+/build/
