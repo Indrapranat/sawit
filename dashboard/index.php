@@ -11,16 +11,17 @@ $pageTitle = 'Dashboard';
 
 // Get stats
 try {
-    $totalBlok = $pdo->query("SELECT COUNT(*) FROM blok")->fetchColumn();
-    $totalKaryawan = $pdo->query("SELECT COUNT(*) FROM karyawan")->fetchColumn();
-    $totalPanen = $pdo->query("SELECT COUNT(*) FROM panen")->fetchColumn();
-    $totalBerat = $pdo->query("SELECT COALESCE(SUM(berat), 0) FROM panen")->fetchColumn();
+    $db = getConnection();
+    $totalBlok = $db->query("SELECT COUNT(*) FROM blok_lahan")->fetchColumn();
+    $totalKaryawan = $db->query("SELECT COUNT(*) FROM karyawan")->fetchColumn();
+    $totalPanen = $db->query("SELECT COUNT(*) FROM hasil_panen")->fetchColumn();
+    $totalBerat = $db->query("SELECT COALESCE(SUM(berat_kg), 0) FROM hasil_panen")->fetchColumn();
 
     // Monthly production for chart
-    $monthlyData = $pdo->query("SELECT DATE_FORMAT(tanggal, '%Y-%m') as bulan, SUM(berat) as total FROM panen WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY bulan ORDER BY bulan")->fetchAll();
+    $monthlyData = $db->query("SELECT DATE_FORMAT(tanggal, '%Y-%m') as bulan, SUM(berat_kg) as total FROM hasil_panen WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) GROUP BY bulan ORDER BY bulan")->fetchAll();
 
     // Recent harvests
-    $recentPanen = $pdo->query("SELECT p.*, b.nama as blok_nama, k.nama as karyawan_nama FROM panen p LEFT JOIN blok b ON p.blok_id = b.id LEFT JOIN karyawan k ON p.karyawan_id = k.id ORDER BY p.tanggal DESC LIMIT 5")->fetchAll();
+    $recentPanen = $db->query("SELECT p.*, b.nama_blok as blok_nama, k.nama as karyawan_nama FROM hasil_panen p LEFT JOIN blok_lahan b ON p.blok_id = b.id LEFT JOIN karyawan k ON p.karyawan_id = k.id ORDER BY p.tanggal DESC LIMIT 5")->fetchAll();
 } catch (PDOException $e) {
     $totalBlok = $totalKaryawan = $totalPanen = $totalBerat = 0;
     $monthlyData = [];
@@ -100,7 +101,7 @@ ob_start();
                     <p class="text-sm font-medium text-gray-900"><?= htmlspecialchars($p['karyawan_nama'] ?? '-') ?></p>
                     <p class="text-xs text-gray-500"><?= htmlspecialchars($p['blok_nama'] ?? '-') ?> &middot; <?= date('d/m/Y', strtotime($p['tanggal'])) ?></p>
                 </div>
-                <span class="text-sm font-bold text-sawit-700"><?= number_format($p['berat']) ?> Kg</span>
+                <span class="text-sm font-bold text-sawit-700"><?= number_format($p['berat_kg']) ?> Kg</span>
             </div>
             <?php endforeach; ?>
             <?php endif; ?>

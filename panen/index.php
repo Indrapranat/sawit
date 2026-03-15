@@ -224,7 +224,6 @@ ob_start();
             </table>
         </div>
     </div>
-</div>
 
     <!-- Delete Modal -->
     <div x-show="deleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition>

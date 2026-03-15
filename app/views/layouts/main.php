@@ -21,9 +21,9 @@
     </script>
     <style>
         [x-cloak]{display:none!important}
-        .sidebar-link{@apply flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200}
-        .sidebar-link:hover{@apply bg-sawit-800/50 text-white}
-        .sidebar-link.active{@apply bg-sawit-700 text-white shadow-lg}
+        .sidebar-link{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.75rem;font-size:0.875rem;font-weight:500;transition:all 0.2s}
+        .sidebar-link:hover{background:rgba(49,87,44,0.5);color:#fff}
+        .sidebar-link.active{background:#4f772d;color:#fff;box-shadow:0 10px 15px -3px rgba(0,0,0,.1)}
     </style>
 </head>
 <body class="bg-gray-50 antialiased" x-data="{sidebarOpen:false,collapsed:false}">
