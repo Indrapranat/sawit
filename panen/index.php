@@ -45,7 +45,7 @@ $pageTitle = "Data Hasil Panen";
 ob_start();
 ?>
 
-<div class="space-y-6">
+<div class="space-y-6" x-data="{deleteId:null,deleteModal:false}">
     <!-- Filter Section -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <form method="GET" action="" class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -210,8 +210,7 @@ ob_start();
                                     </svg>
                                     Edit
                                 </a>
-                                <a href="delete.php?id=<?= $row['id'] ?>" class="text-red-600 hover:text-red-900 inline-flex items-center transition-colors" 
-                                   onclick="return confirm('Yakin ingin menghapus data ini?');">
+                                <a href="#" @click.prevent="deleteId=<?= $row['id'] ?>;deleteModal=true" class="text-red-600 hover:text-red-900 inline-flex items-center transition-colors">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                     </svg>
@@ -223,6 +222,23 @@ ob_start();
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+    <!-- Delete Modal -->
+    <div x-show="deleteModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition>
+        <div class="fixed inset-0 bg-black/50" @click="deleteModal=false"></div>
+        <div class="bg-white rounded-2xl p-6 max-w-sm w-full relative z-10 shadow-2xl" x-transition>
+            <div class="text-center">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"><svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Hapus Data Panen?</h3>
+                <p class="text-sm text-gray-500 mb-6">Data yang dihapus tidak dapat dikembalikan.</p>
+                <div class="flex gap-3">
+                    <button @click="deleteModal=false" class="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition">Batal</button>
+                    <a :href="'delete.php?id='+deleteId" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-xl text-sm font-medium hover:bg-red-700 transition text-center">Hapus</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>

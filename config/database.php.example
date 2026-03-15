@@ -1,0 +1,212 @@
+<?php
+/**
+ * Database Configuration Example
+ * 
+ * Copy this file to config/database.php and update with your credentials:
+ *   cp config/database.php.example config/database.php
+ */
+
+// Database credentials
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'db_sawit');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+define('DB_CHARSET', 'utf8mb4');
+
+// Application Base URL (no trailing slash)
+// Adjust this to match your server setup
+define('BASE_URL', '/sawit');
+
+// Session configuration
+define('SESSION_LIFETIME', 3600); // 1 hour in seconds
+
+/**
+ * Get PDO Connection (Singleton)
+ */
+function getConnection(): PDO
+{
+    static $pdo = null;
+
+    if ($pdo === null) {
+        $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=" . DB_CHARSET;
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES   => false,
+        ];
+
+        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+    }
+
+    return $pdo;
+}
+
+/**
+ * Execute a query and return all rows
+ */
+function dbQuery(string $sql, array $params = []): array
+{
+    $stmt = getConnection()->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->fetchAll();
+}
+
+/**
+ * Execute a query and return a single row
+ */
+function dbQueryOne(string $sql, array $params = []): ?array
+{
+    $stmt = getConnection()->prepare($sql);
+    $stmt->execute($params);
+    $result = $stmt->fetch();
+    return $result ?: null;
+}
+
+/**
+ * Execute an INSERT/UPDATE/DELETE and return affected rows
+ */
+function dbExecute(string $sql, array $params = []): int
+{
+    $stmt = getConnection()->prepare($sql);
+    $stmt->execute($params);
+    return $stmt->rowCount();
+}
+
+/**
+ * Start session with security settings
+ */
+if (session_status() === PHP_SESSION_NONE) {
+    session_start([
+        'cookie_httponly' => true,
+        'cookie_samesite' => 'Lax',
+        'use_strict_mode' => true,
+    ]);
+}
+
+/**
+ * Check session timeout
+ */
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > SESSION_LIFETIME)) {
+    session_unset();
+    session_destroy();
+    session_start();
+    $_SESSION['error'] = 'Sesi Anda telah habis. Silakan login kembali.';
+    if (strpos($_SERVER['REQUEST_URI'], 'login.php') === false && strpos($_SERVER['REQUEST_URI'], 'index.php') === false) {
+        header('Location: ' . BASE_URL . '/login.php');
+        exit;
+    }
+}
+
+if (isset($_SESSION['user_id'])) {
+    $_SESSION['last_activity'] = time();
+}
+
+// ========== CSRF HELPER ==========
+
+/**
+ * Generate or retrieve CSRF token
+ */
+function csrfToken(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Output a hidden CSRF input field
+ */
+function csrfField(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . csrfToken() . '">';
+}
+
+/**
+ * Validate CSRF token from POST request
+ */
+function csrfValidate(): bool
+{
+    $token = $_POST['csrf_token'] ?? '';
+    return hash_equals(csrfToken(), $token);
+}
+
+// ========== FLASH MESSAGE HELPER ==========
+
+/**
+ * Set a flash message
+ */
+function flashSet(string $type, string $message): void
+{
+    $_SESSION['flash'] = ['type' => $type, 'message' => $message];
+}
+
+/**
+ * Get and clear flash message
+ */
+function flashGet(): ?array
+{
+    $flash = $_SESSION['flash'] ?? null;
+    unset($_SESSION['flash']);
+    return $flash;
+}
+
+/**
+ * Render flash message HTML
+ */
+function flashRender(): string
+{
+    $flash = flashGet();
+    if (!$flash) return '';
+
+    $colors = [
+        'success' => 'bg-emerald-50 border-emerald-500 text-emerald-700',
+        'error'   => 'bg-red-50 border-red-500 text-red-700',
+        'warning' => 'bg-yellow-50 border-yellow-500 text-yellow-700',
+        'info'    => 'bg-blue-50 border-blue-500 text-blue-700',
+    ];
+
+    $icons = [
+        'success' => '<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>',
+        'error'   => '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>',
+        'warning' => '<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>',
+        'info'    => '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>',
+    ];
+
+    $type = $flash['type'];
+    $colorClass = $colors[$type] ?? $colors['info'];
+    $iconPath = $icons[$type] ?? $icons['info'];
+
+    return '
+    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 transform -translate-y-2"
+         x-transition:enter-end="opacity-100 transform translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="border-l-4 p-4 mb-6 rounded-r-md ' . $colorClass . '" role="alert">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">' . $iconPath . '</svg>
+                <p class="text-sm font-medium">' . htmlspecialchars($flash['message']) . '</p>
+            </div>
+            <button @click="show = false" class="ml-4 text-current opacity-50 hover:opacity-100 transition-opacity">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+    </div>';
+}
+
+/**
+ * Auth guard — redirect to login if not authenticated
+ */
+function requireAuth(): void
+{
+    if (!isset($_SESSION['user_id'])) {
+        header('Location: ' . BASE_URL . '/login.php');
+        exit;
+    }
+}
