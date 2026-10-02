@@ -1,137 +1,71 @@
-<?php
-// Ensure this is not accessed directly without context if possible, 
-// though for a layout it's often included.
-if (!defined('BASE_URL')) {
-    // Fallback if BASE_URL not defined, assuming root installation.
-    // In production we should define this efficiently.
-    define('BASE_URL', '/sawit/public');
-}
-?>
+<?php if (!isset($_SESSION['user_id'])) { header('Location: /login.php'); exit; } ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'Manajemen Perkebunan Sawit' ?></title>
-    
-    <!-- Tailwind CSS -->
+    <title><?= $pageTitle ?? 'SawitPro' ?> - SawitPro</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        emerald: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            200: '#a7f3d0',
-                            300: '#6ee7b7',
-                            400: '#34d399',
-                            500: '#10b981',
-                            600: '#059669',
-                            700: '#047857',
-                            800: '#065f46',
-                            900: '#064e3b',
-                            950: '#022c22',
-                        },
+                        sawit: { 950:'#0f2d1a', 900:'#1a4d2e', 800:'#31572c', 700:'#4f772d', 600:'#90a955', 500:'#ecf39e' }
                     }
                 }
             }
         }
     </script>
-    
     <style>
-        /* Custom scrollbar for sidebar */
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        
-        /* Transition utility */
-        .fade-enter {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        .fade-enter-active {
-            opacity: 1;
-            transform: translateY(0);
-            transition: opacity 300ms, transform 300ms;
-        }
+        [x-cloak]{display:none!important}
+        .sidebar-link{display:flex;align-items:center;gap:0.75rem;padding:0.75rem 1rem;border-radius:0.75rem;font-size:0.875rem;font-weight:500;transition:all 0.2s}
+        .sidebar-link:hover{background:rgba(49,87,44,0.5);color:#fff}
+        .sidebar-link.active{background:#4f772d;color:#fff;box-shadow:0 10px 15px -3px rgba(0,0,0,.1)}
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans antialiased">
-    
-    <div class="flex h-screen overflow-hidden">
-        
+<body class="bg-gray-50 antialiased" x-data="{sidebarOpen:false,collapsed:false}">
+    <div class="flex min-h-screen">
         <!-- Sidebar -->
         <?php include __DIR__ . '/sidebar.php'; ?>
 
-        <!-- Main Content Wrapper -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden ml-0 md:ml-64 w-full transition-all duration-300" id="main-content">
-            
-            <!-- Top Header -->
+        <!-- Main -->
+        <div class="flex-1 flex flex-col transition-all duration-300" :class="collapsed?'lg:ml-20':'lg:ml-64'">
+            <!-- Header -->
             <?php include __DIR__ . '/header.php'; ?>
 
-            <!-- Main Content Area -->
-            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-                
-                <!-- Content Container -->
-                <div class="container mx-auto max-w-7xl animate-fade-in-up">
-                    
-                    <?php if (isset($content)): ?>
-                        <?= $content ?>
-                    <?php else: ?>
-                        <!-- Fallback content or flash messages can go here -->
-                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <p class="text-sm text-yellow-700">
-                                        Content not loaded.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endif; ?>
-                    
+            <!-- Content -->
+            <main class="flex-1 p-6">
+                <!-- Flash Messages -->
+                <?php if (isset($_SESSION['flash_success'])): ?>
+                <div x-data="{show:true}" x-show="show" x-transition x-init="setTimeout(()=>show=false,4000)"
+                     class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><?= $_SESSION['flash_success'] ?></div>
+                    <button @click="show=false" class="text-green-500 hover:text-green-700"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
                 </div>
+                <?php unset($_SESSION['flash_success']); endif; ?>
+
+                <?php if (isset($_SESSION['flash_error'])): ?>
+                <div x-data="{show:true}" x-show="show" x-transition x-init="setTimeout(()=>show=false,4000)"
+                     class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><?= $_SESSION['flash_error'] ?></div>
+                    <button @click="show=false" class="text-red-500 hover:text-red-700"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                </div>
+                <?php unset($_SESSION['flash_error']); endif; ?>
+
+                <?= $content ?? '' ?>
             </main>
-            
-            <!-- Footer (Simple) -->
-            <footer class="bg-white border-t border-gray-200 py-4 px-6 text-center text-sm text-gray-500">
-                &copy; <?= date('Y') ?> SawitPro - Sistem Manajemen Perkebunan Kelapa Sawit.
+
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 px-6 py-4">
+                <p class="text-center text-gray-500 text-sm">&copy; <?= date('Y') ?> SawitPro. All rights reserved.</p>
             </footer>
         </div>
-        
     </div>
 
-    <!-- Mobile Sidebar Overlay -->
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black opacity-50 z-20 hidden md:hidden"></div>
-
-    <script>
-        // Sidebar Toggle Logic
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-            
-            function toggleSidebar() {
-                sidebar.classList.toggle('-translate-x-full');
-                sidebarOverlay.classList.toggle('hidden');
-            }
-
-            if(sidebarToggle) {
-                sidebarToggle.addEventListener('click', toggleSidebar);
-            }
-            
-            if(sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', toggleSidebar);
-            }
-        });
-    </script>
-
+    <!-- Mobile overlay -->
+    <div x-show="sidebarOpen" x-cloak @click="sidebarOpen=false" class="fixed inset-0 bg-black/50 z-30 lg:hidden" x-transition.opacity></div>
 </body>
 </html>
